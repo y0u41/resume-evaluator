@@ -1,5 +1,7 @@
 # 简历参谋
 
+![License](https://img.shields.io/badge/license-MIT-green) ![React](https://img.shields.io/badge/React-19-61DAFB) ![Express](https://img.shields.io/badge/Express-5-000000) ![LLM](https://img.shields.io/badge/LLM-AI-orange)
+
 面向求职者（尤其应届生）的求职全流程工具：**贴简历 + 说岗位 → 评分、挑刺、改法、岗位匹配**，并覆盖「没简历→评估→多岗对比→改简历→面试准备」的完整闭环。
 
 ## 功能
