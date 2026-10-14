@@ -1,0 +1,27 @@
+# 简历参谋 反向代理配置
+# 将 your-domain.com 换成你的域名；Caddy 会自动申请并续期 HTTPS 证书
+#
+# 用法（Linux 服务器）：
+#   1) 安装 Caddy：https://caddyserver.com/docs/install
+#   2) 把本文件放到 /etc/caddy/Caddyfile（域名改成你的）
+#   3) sudo systemctl reload caddy
+
+your-domain.com {
+	# 注意：不要对 SSE（text/event-stream）做压缩，否则会缓冲、导致评估流“卡住”。
+	# 因此这里不启用全局 encode；如确需压缩，请仅作用于静态资源路径（*.js/*.css/*.html）。
+
+	# 反代到本机 Node 服务
+	reverse_proxy 127.0.0.1:3001 {
+		# 评估是 SSE 流式，必须立即刷新，否则前端会“卡住”直到结束
+		flush_interval -1
+		# 明确传递真实客户端 IP（覆盖客户端可能伪造的 X-Forwarded-For），
+		# 配合后端 TRUST_PROXY=1，游客限流与速率限制才能按真实 IP 生效
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# 隐藏 Server 头
+	header {
+		-Server
+	}
+}

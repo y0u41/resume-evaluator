@@ -1,0 +1,96 @@
+import db from "./db.js";
+import { getPersonKey, getPersonName } from "./person.js";
+
+// 同一个人最多保留的提交次数（放宽上限；收藏与最高分永不删除）
+export const MAX_PER_PERSON = 30;
+
+const insertStmt = db.prepare(
+  `INSERT INTO evaluations
+    (user_id, resume, job_title, job_description, score, report, job_url, person_key, person_name, cache_key, candidate_type, objective_json, kind)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+
+const pruneStmt = db.prepare(
+  `DELETE FROM evaluations
+   WHERE user_id = ? AND person_key = ? AND favorite = 0
+     AND id NOT IN (
+       SELECT id FROM evaluations
+       WHERE user_id = ? AND person_key = ?
+       ORDER BY id DESC LIMIT ?
+     )
+     AND id NOT IN (
+       SELECT id FROM evaluations
+       WHERE user_id = ? AND person_key = ?
+       ORDER BY score DESC LIMIT 1
+     )`
+);
+
+const saveTx = db.transaction((row) => {
+  const info = insertStmt.run(
+    row.userId,
+    row.resume,
+    row.jobTitle,
+    row.jobDescription,
+    row.score,
+    row.report,
+    row.jobUrl,
+    row.personKey,
+    row.personName,
+    row.cacheKey,
+    row.candidateType || "general",
+    row.objectiveJson || null,
+    row.kind || "evaluate"
+  );
+  pruneStmt.run(
+    row.userId,
+    row.personKey,
+    row.userId,
+    row.personKey,
+    MAX_PER_PERSON,
+    row.userId,
+    row.personKey
+  );
+  return info.lastInsertRowid;
+});
+
+export function saveEvaluation(
+  userId,
+  resume,
+  jobTitle,
+  jobDescription,
+  score,
+  report,
+  jobUrl = "",
+  cacheKey = null,
+  candidateType = "general",
+  objectiveJson = null,
+  kind = "evaluate"
+) {
+  return saveTx({
+    userId,
+    resume,
+    jobTitle,
+    jobDescription,
+    score,
+    report,
+    jobUrl: jobUrl || "",
+    personKey: getPersonKey(resume),
+    personName: getPersonName(resume),
+    cacheKey,
+    candidateType,
+    objectiveJson,
+    kind,
+  });
+}
+
+// 查找该用户近期相同输入的评估结果（缓存命中）
+export function findCachedEvaluation(userId, cacheKey, ttlHours) {
+  if (!cacheKey) return null;
+  return db
+    .prepare(
+      `SELECT * FROM evaluations
+       WHERE user_id = ? AND cache_key = ? AND created_at >= datetime('now', ?)
+       ORDER BY id DESC LIMIT 1`
+    )
+    .get(userId, cacheKey, `-${ttlHours} hours`);
+}

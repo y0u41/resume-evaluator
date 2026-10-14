@@ -1,0 +1,46 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# 环境变量（含密钥，切勿提交）
+.env
+.env.*
+!.env.example
+
+# 本地数据（数据库含真实简历，切勿提交）
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# 备份目录（含用户简历，敏感，切勿提交；服务器上权限应 700）
+backups/
+
+# 收款码等个人支付图片（含个人信息，切勿提交到公开仓库）
+public/pay-qr*
+public/pay-*.png
+public/pay-*.jpg
+public/pay-*.jpeg
+
+# 日志
+*.log
+logs/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 压缩包
+*.zip
+*.tar.gz
+*.rar
